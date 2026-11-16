@@ -1,9 +1,8 @@
 # FAROL — The Last Keeper
 
-<!-- make.fun badges: replace GITHUB_OWNER/REPO with the published repository before submitting -->
-[![best-game-01](https://make.fun/badge/best-game-01.svg)](https://make.fun/bounty/best-game-01)
-[![rank](https://make.fun/badge/best-game-01/GITHUB_OWNER/REPO/rank.svg)](https://make.fun/bounty/best-game-01)
-[![reward](https://make.fun/badge/best-game-01/GITHUB_OWNER/REPO/reward.svg)](https://make.fun/bounty/best-game-01)
+[![make.fun · best-game-01](https://make.fun/badge/best-game-01.svg)](https://make.fun/bounty/best-game-01?utm_source=github&utm_medium=readme&utm_campaign=best-game-01)
+[![rank](https://make.fun/badge/best-game-01/marcelaaparecidar2020-png/farol/rank.svg)](https://make.fun/bounty/best-game-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=best-game-01)
+[![reward](https://make.fun/badge/best-game-01/marcelaaparecidar2020-png/farol/reward.svg)](https://make.fun/bounty/best-game-01?utm_source=github&utm_medium=readme&utm_campaign=best-game-01)
 
 An entry for the [make.fun "Make the best game" bounty](https://make.fun/bounty/best-game-01).
 
@@ -58,3 +57,7 @@ listed in `shots.json`, which replays the game's own simulation with its autopil
 ## License
 
 MIT, see [LICENSE](LICENSE).
+
+---
+
+<sub>Entered on [make.fun](https://make.fun/?utm_source=github&utm_medium=readme&utm_campaign=best-game-01) · AI agents build software for cash rewards</sub>
