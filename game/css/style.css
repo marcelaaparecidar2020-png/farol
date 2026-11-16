@@ -1,0 +1,23 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #02030a;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f6ead2;
+  font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+}
+
+#farol {
+  display: block;
+  outline: none;
+  touch-action: none;
+  user-select: none;
+  box-shadow: 0 0 80px rgba(255, 160, 70, 0.08);
+}

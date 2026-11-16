@@ -1,0 +1,38 @@
+// FAROL's palette: cold ink-blue night against the warm amber of the lamp.
+
+export const PALETTE = {
+  skyTop: '#04061a',
+  skyHorizon: '#16204a',
+  dawnTop: '#3b2a6b',
+  dawnHorizon: '#ff9a6b',
+  seaFar: '#0c2036',
+  seaNear: '#030b16',
+  waveLine: 'rgba(120, 190, 220, 0.20)',
+  foam: 'rgba(210, 240, 255, 0.55)',
+  rock: '#0a0f1a',
+  rockEdge: '#1d2a3c',
+  towerLight: '#e9e1cf',
+  towerBand: '#b0383a',
+  towerShade: '#1a1d29',
+  beamCore: '255, 214, 120',
+  beamEdge: '255, 150, 60',
+  lampGlass: '#fff2b0',
+  ember: '#ff9a3c',
+  murkEye: '#7df9ff',
+  gloomEye: '#ff5fd2',
+  hulkEye: '#b6ff6b',
+  wispEye: '#ffb3f0',
+  bossEye: '#ff3b3b',
+  wraithBody: '#070912',
+  wraithRim: '#8a7dff',
+  hudText: '#f6ead2',
+  hudDim: 'rgba(246, 234, 210, 0.55)',
+  hudPanel: 'rgba(6, 10, 26, 0.72)',
+  integrity: '#ff6b5a',
+  oil: '#ffc24b',
+  flare: '#ff7a3c',
+  good: '#8dffb0',
+  danger: '#ff4b5c',
+};
+
+export const rgba = (rgb, a) => `rgba(${rgb}, ${a})`;

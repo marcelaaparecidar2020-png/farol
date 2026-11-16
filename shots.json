@@ -1,0 +1,6 @@
+[
+  { "name": "1-storm.jpg", "query": "?shot=storm&seed=2&at=38.8" },
+  { "name": "2-title.jpg", "query": "?shot=title&seed=2&at=30" },
+  { "name": "3-dawn-gift.jpg", "query": "?shot=upgrade&seed=1" },
+  { "name": "4-victory.jpg", "query": "?shot=end&seed=9" }
+]

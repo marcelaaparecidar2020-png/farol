@@ -1,0 +1,6 @@
+out/
+node_modules/
+*.tar.gz
+wallet.json
+.makefun/credentials
+.playwright-mcp/
