@@ -5,7 +5,7 @@
 // unchanged vendor/makefun-game.ts. The grader uses /output; locally set MAKEFUN_OUTPUT_DIR instead:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { cpSync, existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-game.ts';
@@ -18,6 +18,11 @@ function copyFolder(name: string): void {
   if (!existsSync(from)) throw new Error(`missing ${name}/ beside main.ts`);
   cpSync(from, join(outputDir, name), { recursive: true });
 }
+
+// The gate wants game/index.html as a regular file of at most 1 MiB; fail loudly here rather than at the gate.
+const indexHtml = join(repoRoot, 'game', 'index.html');
+if (!existsSync(indexHtml) || !statSync(indexHtml).isFile()) throw new Error('game/index.html is missing');
+if (statSync(indexHtml).size > 1024 * 1024) throw new Error('game/index.html is over 1 MiB');
 
 mkdirSync(outputDir, { recursive: true });
 copyFolder('game');
