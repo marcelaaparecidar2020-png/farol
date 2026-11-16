@@ -42,6 +42,7 @@ let shotPointer = null;
 let attractRuns = 0;
 
 function setScreen(name) {
+  clearPending(); // a press made on one screen never fires on the next
   ui.screen = name;
   ui.screenT = 0;
   canvas.style.cursor = name === 'play' ? 'none' : 'default';
@@ -68,15 +69,25 @@ function finishRun() {
   setScreen('results');
 }
 
-function playerControls(firstStep) {
+// One-shot actions wait here until a simulation step consumes them. On a fast monitor many frames run no
+// fixed step at all, so a press must outlive the frame it arrived in or it would be lost.
+const pending = { flare: false, foghorn: false };
+
+function clearPending() {
+  pending.flare = false;
+  pending.foghorn = false;
+}
+
+function latchPlayerActions() {
+  if (input.rightClicked || input.wasPressed('Space')) pending.flare = true;
+  if (input.wasPressed('ShiftLeft', 'ShiftRight')) pending.foghorn = true;
+}
+
+function playerControls() {
   const p = input.pointer;
-  return {
-    aimX: p.x,
-    aimY: p.y,
-    focus: p.down,
-    flare: firstStep && (input.rightClicked || input.wasPressed('Space')),
-    foghorn: firstStep && input.wasPressed('ShiftLeft', 'ShiftRight'),
-  };
+  const controls = { aimX: p.x, aimY: p.y, focus: p.down, flare: pending.flare, foghorn: pending.foghorn };
+  clearPending();
+  return controls;
 }
 
 const IDLE = { aimX: 640, aimY: 300, focus: false, flare: false, foghorn: false };
@@ -93,6 +104,7 @@ function handleScreens() {
       if (input.leftClicked || input.wasPressed('Enter', 'NumpadEnter', 'Space')) startRun();
       break;
     case 'play':
+      latchPlayerActions();
       if (input.wasPressed('KeyP', 'Escape')) setScreen('pause');
       else if (session.phase === 'cleared') {
         ui.offers = offerUpgrades(session);
@@ -132,13 +144,13 @@ function handleScreens() {
   }
 }
 
-function step(firstStep) {
+function step() {
   if (ui.screen === 'pause') return;
   if (ui.screen === 'title') {
     updateSession(session, autopilotControls(session, pilot, STEP), STEP);
     if (session.phase !== 'night' && session.phase !== 'dawn') newAttract();
     session.sfx.length = 0;
-  } else if (ui.screen === 'play') updateSession(session, playerControls(firstStep), STEP);
+  } else if (ui.screen === 'play') updateSession(session, playerControls(), STEP);
   else updateSession(session, IDLE, STEP);
 }
 
@@ -179,10 +191,8 @@ function frame(now) {
     ui.mutedNote = Math.max(0, ui.mutedNote - dt);
     handleScreens();
     acc += dt;
-    let first = true;
     while (acc >= STEP) {
-      step(first);
-      first = false;
+      step();
       acc -= STEP;
     }
     if (ui.screen !== 'title') {
