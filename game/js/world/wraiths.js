@@ -7,13 +7,14 @@ import { beamHit } from './light.js';
 import { beamDps, hurtTower, gutterLamp } from './keeper.js';
 import { emitBurst, addText } from './particles.js';
 import { drawGlow } from '../render/glow.js';
+import { revealWraith } from './heralds.js';
 
 // armor: share of the wide beam's heat that lands; focusArmor: share of the focused beam's (default all).
 export const WRAITH_TYPES = {
   murkling: { name: 'Murkling', r: 14, hp: 22, speed: 42, damage: 6, score: 50, eye: PALETTE.murkEye, mass: 1, armor: 1 },
-  gloomray: { name: 'Gloomray', r: 19, hp: 32, speed: 80, damage: 8, score: 90, eye: PALETTE.gloomEye, mass: 1, armor: 1 },
-  brinehulk: { name: 'Brinehulk', r: 31, hp: 220, speed: 19, damage: 22, score: 300, eye: PALETTE.hulkEye, mass: 3, armor: 0.2 },
-  sirenwisp: { name: 'Siren-wisp', r: 12, hp: 26, speed: 58, damage: 5, score: 140, eye: PALETTE.wispEye, mass: 0.8, armor: 1 },
+  gloomray: { name: 'Gloomray', r: 19, hp: 32, speed: 80, damage: 8, score: 90, eye: PALETTE.gloomEye, mass: 1, armor: 1, tip: 'Swoops fast · focus the beam to catch it' },
+  brinehulk: { name: 'Brinehulk', r: 31, hp: 220, speed: 19, damage: 22, score: 300, eye: PALETTE.hulkEye, mass: 3, armor: 0.2, tip: 'Armoured · only the focused beam burns it' },
+  sirenwisp: { name: 'Siren-wisp', r: 12, hp: 26, speed: 58, damage: 5, score: 140, eye: PALETTE.wispEye, mass: 0.8, armor: 1, tip: 'Hunts ships · burn it before a hull breaks' },
   // The newcomers: each watch meets them in its own order, one per night from Night II.
   wickmoth: {
     name: 'Wickmoth',
@@ -27,6 +28,7 @@ export const WRAITH_TYPES = {
     mass: 0.6,
     armor: 0.15,
     counter: 'Wickmoths fly up the beam to smother the lamp. Focus burns them; the wide beam only draws them in.',
+    tip: 'Flies up the beam to smother the lamp · focus burns it',
   },
   broodmaw: {
     name: 'Broodmaw',
@@ -39,6 +41,7 @@ export const WRAITH_TYPES = {
     mass: 2,
     armor: 1,
     counter: 'A broodmaw bursts into broodlings under the beam. A flare or lightning burns the whole brood.',
+    tip: 'Splits under the beam · a flare burns it whole',
   },
   broodling: { name: 'Broodling', r: 8, hp: 8, speed: 72, damage: 3, score: 25, eye: PALETTE.broodEye, mass: 0.5, armor: 1, hidden: true },
   veilfin: {
@@ -53,6 +56,7 @@ export const WRAITH_TYPES = {
     armor: 1,
     focusArmor: 0.3,
     counter: 'Veilfins slip out of the light and scatter a focused beam. Hold them in the wide beam until they tire.',
+    tip: 'Slips out of a narrow beam · hold it in the wide light',
   },
 };
 
@@ -82,6 +86,8 @@ export function spawnWraith(session, type, x, y) {
     ky: 0,
     weave: rng.sign(),
     stamina: FIN_STAMINA,
+    vx: 0,
+    vy: 0,
     ship: null,
     dead: false,
   };
@@ -156,6 +162,7 @@ export function updateWraiths(session, dt) {
 
     const strike = beamHit(session, w.x, w.y, w.r);
     w.lit = approach(w.lit, strike > 0 ? 1 : session.weather.flash > 0.3 ? 0.8 : 0, 12, dt);
+    if (w.lit > 0.5 && w.age > 0.4 && !session.seen.has(w.type)) revealWraith(session, w);
     if (strike > 0) {
       const armor = lerp(w.def.armor, w.def.focusArmor ?? 1, keeper.focusLevel);
       damageWraith(session, w, dps * strike * armor * dt, 'beam');
@@ -215,6 +222,8 @@ export function updateWraiths(session, dt) {
         vy *= 0.45;
       }
     }
+    w.vx = vx;
+    w.vy = vy;
     w.x += (vx + w.kx) * dt;
     w.y += (vy + w.ky) * dt;
     w.kx -= w.kx * 3 * dt;
@@ -422,15 +431,21 @@ export function drawWraithEyes(ctx, session) {
     const ey = w.y - w.r * (eye.lift ?? 0.25);
     let alpha = (0.75 + 0.25 * Math.sin(t * 3 + w.seed)) * blink;
     if (eye.slit) {
-      // a veilfin hides its eye until it is out of breath
-      alpha *= w.stamina > 0 ? 0.45 : 1;
+      // a veilfin half-hides its slit of an eye until it is out of breath, and trails a pale wake
+      alpha *= w.stamina > 0 ? 0.65 : 1;
       for (let i = -2; i <= 2; i++) drawGlow(ctx, w.def.eye, w.x + i * 3.5, ey, size * (1 - Math.abs(i) * 0.18), alpha);
+      for (let i = 1; i <= 3; i++) drawGlow(ctx, w.def.eye, w.x - w.vx * 0.05 * i, w.y - w.vy * 0.05 * i + 6, 7 - i, 0.22 * emerge);
     } else {
       drawGlow(ctx, w.def.eye, w.x - eye.gap, ey, size, alpha);
       drawGlow(ctx, w.def.eye, w.x + eye.gap, ey, size, alpha);
       if (eye.third) drawGlow(ctx, w.def.eye, w.x, ey - eye.gap * 1.1, size, alpha);
     }
-    if (w.type === 'wickmoth') drawGlow(ctx, '#c9b8ff', w.x, w.y, w.r * 2.6, 0.12 + 0.1 * Math.sin(t * 16 + w.seed));
+    if (w.type === 'wickmoth') {
+      // dusty wings beat in the dark: two pale lobes either side of the eyes
+      const beat = 0.6 + 0.4 * Math.abs(Math.sin(t * 16 + w.seed));
+      for (const side of [-1, 1]) drawGlow(ctx, '#c9b8ff', w.x + side * w.r * 1.5 * beat, w.y - 2, w.r * 1.3, 0.3 * emerge);
+    }
+    if (w.type === 'broodmaw') drawGlow(ctx, w.def.eye, w.x, w.y + 4, w.r * (1.8 + 0.25 * Math.sin(t * 3.4 + w.seed)), 0.13 * emerge);
     if (w.burn > 0 || w.lit > 0.5) drawGlow(ctx, PALETTE.ember, w.x, w.y, w.r * 2.2, 0.25 * w.lit + (w.burn > 0 ? 0.25 : 0));
   }
   ctx.globalCompositeOperation = 'source-over';

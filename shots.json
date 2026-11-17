@@ -1,6 +1,6 @@
 [
-  { "name": "1-storm.jpg", "query": "?shot=storm&seed=7&at=44.9&omen=convoy" },
+  { "name": "1-storm.jpg", "query": "?shot=storm&seed=90&at=14.2500&omen=flotsam" },
   { "name": "2-title.jpg", "query": "?shot=title&seed=2&at=30" },
   { "name": "3-read-the-sky.jpg", "query": "?shot=omen&seed=1" },
-  { "name": "4-victory.jpg", "query": "?shot=end&seed=11" }
+  { "name": "4-victory.jpg", "query": "?shot=end&seed=16" }
 ]

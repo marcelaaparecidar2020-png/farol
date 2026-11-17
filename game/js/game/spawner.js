@@ -23,9 +23,11 @@ export function createSpawner(session, nightIndex) {
   if (night.newcomers) for (const type of NEWCOMERS) spawns[type] = night.newcomers;
   const timers = {};
   for (const [type, every] of Object.entries(spawns)) timers[type] = every * 0.6;
-  // a newcomer shows itself early, while the banner still names it
-  if (newcomer) timers[newcomer] = 5;
+  // the banner names the newcomer at dusk; it rises once the night's first wave is in, so its first
+  // sighting comes in the thick of things, after the keeper has read what it is
+  if (newcomer) timers[newcomer] = 12;
   const length = night.duration ?? 110;
+  const convoyAt = omen.convoyAt ? length * omen.convoyAt : Infinity;
   const crates = [];
   for (let i = 0; i < (omen.crates ?? 0); i++) crates.push(length * (0.08 + (0.8 * i) / omen.crates));
   return {
@@ -35,8 +37,9 @@ export function createSpawner(session, nightIndex) {
     timers,
     packEvery: night.packs * relief,
     packT: night.packs * relief || Infinity,
-    shipsLeft: [...night.ships],
-    convoyAt: omen.convoyAt ? length * omen.convoyAt : Infinity,
+    // the convoy takes the place of the lone ships that would have sailed after it
+    shipsLeft: night.ships.filter((t) => t < convoyAt),
+    convoyAt,
     crates,
   };
 }
@@ -70,7 +73,7 @@ export function updateSpawner(session, dt) {
   if (session.nightTime >= sp.convoyAt) {
     sp.convoyAt = Infinity;
     for (let lane = 0; lane < 3; lane++) spawnShip(session, { lane, convoy: true });
-    for (let i = 0; i < 3; i++) spawnWraith(session, 'sirenwisp', session.rng.range(160, W - 160), HORIZON + session.rng.range(8, 24));
+    for (let i = 0; i < 2; i++) spawnWraith(session, 'sirenwisp', session.rng.range(160, W - 160), HORIZON + session.rng.range(8, 24));
     session.sfx.push('omen');
   }
   while (sp.crates.length && session.nightTime >= sp.crates[0]) {

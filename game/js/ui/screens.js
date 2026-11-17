@@ -152,7 +152,7 @@ export function drawOmenPicker(ctx, ui, session) {
   text(ctx, 'READ THE SKY', W / 2, 96, { size: 50, weight: 900, align: 'center', font: FONT_TITLE, color: '#ffd8e0', glow: '#ff6e8a', glowBlur: 28, spacing: 8 });
   text(ctx, `Choose the omen Night ${ROMAN[next]} will sail under`, W / 2, 148, { size: 20, weight: 700, align: 'center', font: FONT_TITLE, color: PALETTE.hudText });
   const newcomer = featuredFor(session.plan, next);
-  const ahead = next === LAST_NIGHT ? 'The Undertow rises tonight. Every newcomer returns with it.' : newcomer ? `A newcomer rides this night in: the ${WRAITH_TYPES[newcomer].name}.` : '';
+  const ahead = next === LAST_NIGHT ? 'The Undertow rises tonight. Every newcomer returns with it.' : newcomer ? `A newcomer rides this night in: the ${WRAITH_TYPES[newcomer].name} — ${WRAITH_TYPES[newcomer].tip.toLowerCase()}.` : '';
   if (ahead) text(ctx, ahead, W / 2, 186, { size: 16, weight: 800, align: 'center', color: '#ffd9a0' });
   text(ctx, 'EVERY OMEN BENDS A RULE AND PAYS FOR IT', W / 2, 236, { size: 16, weight: 900, align: 'center', color: PALETTE.hudDim, spacing: 3 });
 
@@ -224,10 +224,10 @@ export function drawPause(ctx) {
 }
 
 export function keeperRank(score, won) {
-  if (won && score >= 110000) return 'Lord of the Lamp';
+  if (won && score >= 70000) return 'Lord of the Lamp';
   if (won) return 'Keeper of the Bay';
-  if (score >= 25000) return 'Stormwatcher';
-  if (score >= 8000) return 'Lamplighter';
+  if (score >= 15000) return 'Stormwatcher';
+  if (score >= 6000) return 'Lamplighter';
   return 'Apprentice Keeper';
 }
 

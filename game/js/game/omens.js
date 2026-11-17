@@ -4,6 +4,8 @@
 // generator, so a watch replays exactly from its seed whatever happens in play.
 
 import { createRng } from '../core/rng.js';
+import { addText } from '../world/particles.js';
+import { LAMP } from '../world/layout.js';
 
 export const OMENS = {
   calm: { id: 'calm', name: 'Clear Sky', icon: 'moon', risk: '', reward: '' },
@@ -12,35 +14,39 @@ export const OMENS = {
     name: 'Fog Bank',
     icon: 'fog',
     risk: 'The beam reaches only half the bay.',
-    reward: 'Every creature burned scores ×1.5.',
-    range: 500,
-    darkness: 0.06,
-    scoreMul: 1.5,
+    reward: 'Flares burn 50% wider in the mist. Score ×1.25.',
+    short: 'Beam reaches half the bay · flares burn wider',
+    range: 620,
+    darkness: 0.04,
+    flareMul: 1.5,
+    scoreMul: 1.25,
   },
   convoy: {
     id: 'convoy',
     name: 'The Convoy',
     icon: 'ship',
-    risk: 'Three ships sail at once, siren-wisps on their wake.',
+    risk: 'Three ships sail at once, two siren-wisps on their wake.',
     reward: 'Each convoy ship brought home pays +600 and oil.',
+    short: 'Three ships sail together mid-night · +600 each home',
     convoyAt: 0.42,
   },
   redtide: {
     id: 'redtide',
     name: 'Red Tide',
     icon: 'tide',
-    risk: 'Creatures rise 35% faster.',
-    reward: 'Double score, and burn chains last longer.',
-    pace: 1.35,
-    scoreMul: 2,
-    comboWindow: 3.4,
+    risk: 'Creatures rise 30% faster.',
+    reward: 'More creatures to burn, and every 15 burned restores a flare.',
+    short: 'Creatures rise faster · every 15 burned restores a flare',
+    pace: 1.3,
+    flareEvery: 15,
   },
   thunder: {
     id: 'thunder',
     name: 'Thunderhead',
     icon: 'bolt',
-    risk: 'Lightning twice as often, and each bolt blinds the lamp.',
+    risk: 'Lightning twice as often, and each bolt blinds the lamp for a second.',
     reward: 'Every bolt scorches and stuns all creatures.',
+    short: 'Bolts scorch and stun the bay, but blind the lamp',
     strikeRate: 2,
   },
   flotsam: {
@@ -49,7 +55,8 @@ export const OMENS = {
     icon: 'crate',
     risk: 'More creatures rise from the wreckage.',
     reward: 'Cargo drifts by: hold the beam on it to haul oil, flares and stone.',
-    pace: 1.12,
+    short: 'Hold the beam on drifting cargo to haul it in',
+    pace: 1.2,
     crates: 6,
   },
   still: {
@@ -58,6 +65,7 @@ export const OMENS = {
     icon: 'wave',
     risk: 'Next dawn offers only two gifts.',
     reward: 'A quieter night: 25% fewer creatures.',
+    short: 'Fewer creatures · only two gifts at the next dawn',
     pace: 0.75,
     giftsNext: 2,
   },
@@ -88,6 +96,18 @@ export function offerOmens(plan) {
   const picks = [];
   while (picks.length < 2 && pool.length) picks.push(OMENS[pool.splice(Math.floor(plan.rng.next() * pool.length), 1)[0]]);
   return picks;
+}
+
+/** Red Tide: every so many creatures burned, the tide washes a flare up to the gallery. */
+export function omenOnKill(session) {
+  const every = session.omen.flareEvery;
+  if (!every || session.phase !== 'night') return;
+  session.omenKills = (session.omenKills || 0) + 1;
+  const k = session.keeper;
+  if (session.omenKills % every === 0 && k.flares < k.flaresMax) {
+    k.flares++;
+    addText(session, LAMP.x, LAMP.y - 96, 'THE TIDE GIVES A FLARE', '#ff9a8a', 17);
+  }
 }
 
 export function omenById(id) {

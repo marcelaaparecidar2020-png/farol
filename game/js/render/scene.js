@@ -10,6 +10,7 @@ import { drawLightningBolt, drawRain, drawFog } from '../world/weather.js';
 import { drawCrates, drawCrateSignals } from '../world/flotsam.js';
 import { drawShips, drawShipSignals } from '../world/ships.js';
 import { drawWraithBodies, drawWraithEyes } from '../world/wraiths.js';
+import { drawHeralds } from '../world/heralds.js';
 import { drawUndertowBody, drawUndertowRim, drawUndertowEye } from '../world/undertow.js';
 import { drawParticles, drawRings, drawFloatingTexts } from '../world/particles.js';
 import { hash01 } from '../core/mathx.js';
@@ -51,6 +52,7 @@ export function drawWorld(ctx, session) {
   if (!session.attract) {
     drawRings(ctx, session);
     drawFloatingTexts(ctx, session);
+    drawHeralds(ctx, session);
   }
   ctx.restore();
 

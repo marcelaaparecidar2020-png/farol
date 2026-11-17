@@ -5,9 +5,10 @@ import { createRng } from '../core/rng.js';
 import { ROMAN } from '../core/mathx.js';
 import { NIGHTS, LAST_NIGHT } from './nights.js';
 import { createSpawner, updateSpawner } from './spawner.js';
-import { planWatch, omenById, featuredFor } from './omens.js';
+import { planWatch, omenById, featuredFor, omenOnKill } from './omens.js';
 import { WRAITH_TYPES } from '../world/wraiths.js';
 import { updateCrates } from '../world/flotsam.js';
+import { markEarlierNights, updateHeralds } from '../world/heralds.js';
 import { createStats, scoreKill, updateCombo } from './scoring.js';
 import { UPGRADES, applyUpgrade } from './upgrades.js';
 import { createKeeper, updateKeeper, updateFlares } from '../world/keeper.js';
@@ -31,6 +32,8 @@ export function createSession({ seed = 1, night = 1, upgrades = [], attract = fa
     omenLog: [],
     giftCount: 3,
     crates: [],
+    seen: new Set(),
+    heralds: [],
     rng: createRng(seed),
     fxRng: createRng(seed * 7919 + 17),
     time: 0,
@@ -59,10 +62,14 @@ export function createSession({ seed = 1, night = 1, upgrades = [], attract = fa
   };
   session.damageWraith = (w, amount, source) => damageWraith(session, w, amount, source);
   session.damageBoss = (amount) => damageBoss(session, amount);
-  session.onKill = (w) => scoreKill(session, w);
+  session.onKill = (w) => {
+    scoreKill(session, w);
+    omenOnKill(session);
+  };
   session.addScore = (n) => (session.stats.score += n);
   for (const id of upgrades) applyUpgrade(session, UPGRADES.find((u) => u.id === id));
   if (omen !== 'calm') session.plan.chosen.push(omen);
+  markEarlierNights(session, night);
   startNight(session, night, omen);
   return session;
 }
@@ -80,6 +87,7 @@ export function startNight(session, n, omenId = 'calm') {
   session.darkness = def.darkness + (omen.darkness ?? 0);
   session.keeper.range = omen.range ?? session.keeper.baseRange;
   session.stats.comboWindow = omen.comboWindow ?? 2.4;
+  session.omenKills = 0;
   session.weather.storm = def.storm;
   session.weather.nextStrike = 4;
   session.spawner = createSpawner(session, n);
@@ -91,7 +99,7 @@ export function startNight(session, n, omenId = 'calm') {
   session.banner = {
     title: `NIGHT ${ROMAN[n]}`,
     sub: def.title,
-    hint: newcomer ? `NEW: ${WRAITH_TYPES[newcomer].counter}` : def.hint,
+    hint: newcomer ? `New tonight: the ${WRAITH_TYPES[newcomer].name}. ${WRAITH_TYPES[newcomer].tip}.` : def.hint,
     omen: omen.id !== 'calm' ? omen : null,
     t: 0,
   };
@@ -174,6 +182,7 @@ export function updateSession(session, controls, dt) {
     // 'cleared', 'won' and 'fallen' hold still behind their screens, the sea still moving
     if (session.phase === 'won') session.dawn = 1;
   }
+  updateHeralds(session, dt);
   updateParticles(session, dt);
 }
 

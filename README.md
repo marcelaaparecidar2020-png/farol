@@ -12,7 +12,7 @@ reveals them and burns them away. Ships cross the reefs too, and only make it th
 their way. Every second the beam spends on a ship is a second it isn't spending on the creatures.
 Survive five nights, choose a gift for the lighthouse at each dawn, and face the Undertow on the last night.
 
-![FAROL on Night IV, a convoy crossing the bay in a lightning flash](screenshots/1-storm.jpg)
+![FAROL on Night IV: a lightning flash shows every creature around the tower while the beam reveals a Broodmaw for the first time](screenshots/1-storm.jpg)
 
 ## Every watch is different
 
@@ -23,12 +23,16 @@ Survive five nights, choose a gift for the lighthouse at each dawn, and face the
   - The **Veilfin** slips out of a narrow beam and scatters focused light. Hold it in the wide beam until it tires.
 - **Omens.** After each dawn's gift, you read the sky and choose the omen the next night sails under, from
   two on offer. Each omen bends one rule and pays for it:
-  - **Fog Bank** halves the beam's reach, but every creature burned scores ×1.5.
-  - **The Convoy** sends three ships at once with siren-wisps behind them, and each one you bring home pays big.
-  - **Red Tide** brings creatures faster, for double score.
+  - **Fog Bank** shortens the beam, but flares burn wider in the mist.
+  - **The Convoy** sends three ships together, with siren-wisps behind them. Each one you bring home pays +600.
+  - **Red Tide** brings creatures faster, and every 15 burned restores a flare.
   - **Thunderhead** sends bolts that scorch and stun the bay but blind the lamp.
   - **Flotsam** sets cargo adrift, which you haul in with the beam.
   - **Still Water** gives a quiet night, but the next dawn offers only two gifts.
+
+  The omen's rule stays on screen all night.
+- **First sightings.** The first creature of each kind in a watch is ringed and named where it rises, with
+  a one-line counter. After that you know it by its eyes and its shape in the dark.
 - **Gifts with a cost, and oaths.**
   - Some gifts trade one strength for another. Granite Mortar adds stone but slows the lamp's turn. Star Shells
     make flares far stronger but leave one fewer in the rack. Burning Glass makes focus hotter but drinks more oil.

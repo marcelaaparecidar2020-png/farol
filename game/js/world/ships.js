@@ -51,8 +51,10 @@ export function updateShips(session, dt) {
     s.lit = approach(s.lit, light > 0.5 ? 1 : 0, 10, dt);
     const reef = reefNear(s);
     s.danger = !!reef;
-    if (reef && s.lit < 0.5) s.peril += 0.34 * dt;
-    if (s.sirens > 0) s.peril += 0.42 * s.sirens * dt;
+    // a convoy keeps close order and a steadier helm: it drifts into danger more slowly
+    const steady = s.convoy ? 0.6 : 1;
+    if (reef && s.lit < 0.5) s.peril += 0.34 * steady * dt;
+    if (s.sirens > 0) s.peril += 0.42 * s.sirens * steady * dt;
     if (s.lit > 0.5) s.peril -= 0.4 * dt;
     s.peril = clamp(s.peril, 0, 1);
     // A guided ship veers away from the reef it is passing.

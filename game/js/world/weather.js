@@ -43,15 +43,15 @@ export function strike(session) {
   if (session.omen?.strikeRate && session.phase === 'night') {
     // Thunderhead: every bolt scorches and stuns the bay, and leaves the keeper's lamp blind for a moment
     for (const w of session.wraiths) {
-      session.damageWraith(w, 5, 'lightning');
-      w.stun = Math.max(w.stun, 0.35);
+      session.damageWraith(w, 3, 'lightning');
+      w.stun = Math.max(w.stun, 0.3);
     }
-    gutterLamp(session, 0.8, null);
+    gutterLamp(session, 1, null);
   }
   if (session.keeper.lightningRod > 0) {
     let struck = 0;
     for (const w of session.wraiths) {
-      session.damageWraith(w, 26 * session.keeper.lightningRod, 'lightning');
+      session.damageWraith(w, 16 * session.keeper.lightningRod, 'lightning');
       struck++;
     }
     if (struck > 0) addText(session, session.keeper.aimX ?? 640, HORIZON + 40, 'LIGHTNING ROD!', '#cfe8ff', 22);

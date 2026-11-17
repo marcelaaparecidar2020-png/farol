@@ -111,7 +111,8 @@ export function fireFlare(session, x, y) {
   k.flares--;
   const fx = clamp(x, 40, W - 40);
   const fy = clamp(y, HORIZON + 20, 640);
-  session.flares.push({ x: fx, y: fy, radius: FLARE_RADIUS * Math.sqrt(k.flarePower), power: k.flarePower, glow: 1, life: 3.2, age: 0, burst: false });
+  const radius = FLARE_RADIUS * Math.sqrt(k.flarePower) * (session.omen?.flareMul ?? 1);
+  session.flares.push({ x: fx, y: fy, radius, power: k.flarePower, glow: 1, life: 3.2, age: 0, burst: false });
   session.sfx.push('flare');
   return true;
 }

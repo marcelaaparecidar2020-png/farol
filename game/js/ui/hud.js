@@ -41,11 +41,12 @@ function drawNightClock(ctx, session) {
 function drawOmenChip(ctx, session) {
   const omen = session.omen;
   if (!omen || omen.id === 'calm') return;
-  panel(ctx, 16, 94, 300, 30, { fill: 'rgba(30, 12, 26, 0.72)', border: 'rgba(255, 140, 160, 0.35)' });
-  drawIcon(ctx, omen.icon, 34, 109, 16, '#ffb3c0');
-  text(ctx, omen.name.toUpperCase(), 50, 110, { size: 13, weight: 900, color: '#ffd0d8', spacing: 1 });
-  const tag = omen.scoreMul ? `SCORE ×${omen.scoreMul}` : omen.id === 'convoy' ? 'CONVOY' : omen.id === 'flotsam' ? `${session.stats.salvaged} SALVAGED` : '';
-  if (tag) text(ctx, tag, 304, 110, { size: 12, weight: 900, align: 'right', color: '#ffe08a' });
+  panel(ctx, 16, 94, 380, 46, { fill: 'rgba(30, 12, 26, 0.74)', border: 'rgba(255, 140, 160, 0.35)' });
+  drawIcon(ctx, omen.icon, 34, 108, 16, '#ffb3c0');
+  text(ctx, `OMEN · ${omen.name.toUpperCase()}`, 50, 108, { size: 13, weight: 900, color: '#ffd0d8', spacing: 1 });
+  const tag = omen.id === 'flotsam' ? `${session.stats.salvaged} SALVAGED` : omen.scoreMul ? `SCORE ×${omen.scoreMul}` : '';
+  if (tag) text(ctx, tag, 384, 108, { size: 12, weight: 900, align: 'right', color: '#ffe08a' });
+  text(ctx, omen.short, 30, 127, { size: 12, weight: 700, color: PALETTE.hudText });
 }
 
 function drawScore(ctx, session) {

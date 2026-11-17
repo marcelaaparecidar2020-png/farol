@@ -190,15 +190,46 @@ test('The Convoy sails three gold-pennant ships at once', () => {
   assert.equal(s.ships.filter((sh) => sh.convoy).length, 3);
 });
 
-test('Red Tide doubles the score of a kill', () => {
+test('Red Tide: no score multiplier, but every fifteenth creature burned restores a flare', () => {
   const a = quietSession();
   const b = quietSession();
   b.omen = OMENS.redtide;
-  for (const s of [a, b]) {
-    const w = spawnWraith(s, 'murkling', 640, 300);
-    s.damageWraith(w, 999, 'beam');
-  }
-  assert.equal(b.stats.score, a.stats.score * 2);
+  for (const s of [a, b]) s.damageWraith(spawnWraith(s, 'murkling', 640, 300), 999, 'beam');
+  assert.equal(b.stats.score, a.stats.score, 'a kill scores the same as on a clear night');
+  const k = b.keeper;
+  k.flares = 0;
+  for (let i = 1; i < 2 * OMENS.redtide.flareEvery; i++) b.damageWraith(spawnWraith(b, 'murkling', 640, 300), 999, 'beam');
+  assert.equal(k.flares, 2, 'two flares for the first thirty burned (one already counted above)');
+});
+
+test('Fog Bank: flares burn wider in the mist', () => {
+  const s = quietSession();
+  const plain = quietSession();
+  s.omen = OMENS.fog;
+  fireFlare(s, 640, 300);
+  fireFlare(plain, 640, 300);
+  assert.ok(s.flares[0].radius > plain.flares[0].radius * 1.3);
+});
+
+test('a creature is named when the light first reveals it, once per kind', () => {
+  const s = quietSession({ night: 2 });
+  const first = spawnWraith(s, 'veilfin', 980, 300);
+  const second = spawnWraith(s, 'veilfin', 300, 300);
+  first.age = second.age = 1;
+  run(s, IDLE, 0.5);
+  assert.equal(s.heralds.length, 0, 'eyes in the dark are not yet named');
+  first.stamina = 0;
+  s.keeper.aim = Math.atan2(300 - LAMP.y, 980 - LAMP.x);
+  run(s, aimAt(980, 300), 0.5);
+  assert.equal(s.heralds.length, 1);
+  assert.equal(s.heralds[0].w, first);
+  s.keeper.aim = Math.atan2(300 - LAMP.y, 300 - LAMP.x);
+  second.stamina = 0;
+  run(s, aimAt(300, 300), 0.5);
+  assert.equal(s.heralds.length, 1, 'the second veilfin goes unnamed');
+  spawnWraith(s, 'murkling', 640, 300).age = 1;
+  run(s, aimAt(640, 300), 0.3);
+  assert.ok(!s.heralds.some((h) => h.w.type === 'murkling'), 'murklings were met on Night I');
 });
 
 test('Thunderhead bolts scorch and stun every creature and blind the lamp', () => {

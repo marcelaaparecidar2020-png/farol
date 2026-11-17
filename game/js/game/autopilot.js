@@ -2,7 +2,7 @@
 // It reads only what a player could see and answers with the same controls a player sends.
 
 import { dist } from '../core/mathx.js';
-import { TOWER_TARGET, W } from '../world/layout.js';
+import { TOWER_TARGET, LAMP, W } from '../world/layout.js';
 
 const THREAT = { murkling: 1, gloomray: 1.4, brinehulk: 1.8, sirenwisp: 1.6, wickmoth: 2.2, broodmaw: 1.5, broodling: 0.9, veilfin: 1.4 };
 // the beam each kind asks for: focus for the armoured and the moths, wide for the veilfins
@@ -33,6 +33,8 @@ export function autopilotControls(session, pilot, dt) {
     }
   }
   for (const w of session.wraiths) {
+    // the beam visibly ends at its reach (in fog, half the bay): nothing past it is worth aiming at
+    if (dist(w.x, w.y, LAMP.x, LAMP.y) > k.range + w.r) continue;
     const near = 1 - Math.min(1, dist(w.x, w.y, TOWER_TARGET.x, TOWER_TARGET.y) / 900);
     const score = near * 3 * THREAT[w.type] + (w.ship ? 1.5 : 0);
     if (score > bestScore) {
