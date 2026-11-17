@@ -7,7 +7,7 @@ const COMBO_WINDOW = 2.4;
 const BEST_KEY = 'farol.best';
 
 export function createStats() {
-  return { score: 0, kills: 0, shipsSaved: 0, shipsLost: 0, combo: 0, comboTimer: 0, bestCombo: 0, nightsSurvived: 0 };
+  return { score: 0, kills: 0, shipsSaved: 0, shipsLost: 0, salvaged: 0, combo: 0, comboTimer: 0, comboWindow: COMBO_WINDOW, bestCombo: 0, nightsSurvived: 0 };
 }
 
 export function comboMultiplier(stats) {
@@ -18,10 +18,10 @@ export function scoreKill(session, wraith) {
   const st = session.stats;
   st.kills++;
   st.combo++;
-  st.comboTimer = COMBO_WINDOW;
+  st.comboTimer = st.comboWindow;
   st.bestCombo = Math.max(st.bestCombo, st.combo);
   const mult = comboMultiplier(st);
-  const points = Math.round(wraith.def.score * mult);
+  const points = Math.round(wraith.def.score * mult * (session.omen?.scoreMul ?? 1));
   st.score += points;
   const color = mult >= 3 ? '#ff8ad8' : mult >= 2 ? '#ffd36b' : PALETTE.hudText;
   addText(session, wraith.x, wraith.y - wraith.r - 10, mult > 1 ? `+${points} ×${mult}` : `+${points}`, color, mult > 1 ? 19 : 16);

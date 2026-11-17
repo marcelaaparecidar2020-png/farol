@@ -11,6 +11,7 @@ import { drawIcon } from './icons.js';
 
 export function drawHud(ctx, session, pointer) {
   drawNightClock(ctx, session);
+  drawOmenChip(ctx, session);
   drawScore(ctx, session);
   drawTowerPanel(ctx, session);
   drawShipTally(ctx, session);
@@ -36,6 +37,17 @@ function drawNightClock(ctx, session) {
   }
 }
 
+/** Tonight's omen, under the clock, so the bent rule is never forgotten mid-night. */
+function drawOmenChip(ctx, session) {
+  const omen = session.omen;
+  if (!omen || omen.id === 'calm') return;
+  panel(ctx, 16, 94, 300, 30, { fill: 'rgba(30, 12, 26, 0.72)', border: 'rgba(255, 140, 160, 0.35)' });
+  drawIcon(ctx, omen.icon, 34, 109, 16, '#ffb3c0');
+  text(ctx, omen.name.toUpperCase(), 50, 110, { size: 13, weight: 900, color: '#ffd0d8', spacing: 1 });
+  const tag = omen.scoreMul ? `SCORE ×${omen.scoreMul}` : omen.id === 'convoy' ? 'CONVOY' : omen.id === 'flotsam' ? `${session.stats.salvaged} SALVAGED` : '';
+  if (tag) text(ctx, tag, 304, 110, { size: 12, weight: 900, align: 'right', color: '#ffe08a' });
+}
+
 function drawScore(ctx, session) {
   const st = session.stats;
   panel(ctx, W - 276, 14, 260, 74);
@@ -45,7 +57,7 @@ function drawScore(ctx, session) {
     const mult = comboMultiplier(st);
     const hot = mult >= 3 ? '#ff8ad8' : mult >= 2 ? '#ffd36b' : '#cfe8ff';
     text(ctx, `${st.combo} BURNED  ×${mult}`, W - 260, 70, { size: 15, weight: 900, color: hot });
-    bar(ctx, W - 110, 66, 80, 7, st.comboTimer / 2.4, hot);
+    bar(ctx, W - 110, 66, 80, 7, st.comboTimer / st.comboWindow, hot);
   } else {
     text(ctx, `${st.kills} creatures burned`, W - 260, 70, { size: 14, weight: 600, color: PALETTE.hudDim });
   }
@@ -157,10 +169,13 @@ export function drawNightBanner(ctx, session) {
   grad.addColorStop(0.5, `rgba(4,6,20,${0.7 * a})`);
   grad.addColorStop(1, 'rgba(4,6,20,0)');
   ctx.fillStyle = grad;
-  ctx.fillRect(0, y - 70, W, 150);
+  ctx.fillRect(0, y - 70, W, b.omen ? 180 : 150);
   text(ctx, b.title, W / 2, y - 20, { size: 56, weight: 900, align: 'center', font: FONT_TITLE, color: '#ffe3a6', glow: '#ff9a3c', glowBlur: 28, spacing: 8, alpha: a });
   text(ctx, b.sub, W / 2, y + 26, { size: 22, weight: 700, align: 'center', font: FONT_TITLE, color: PALETTE.hudText, alpha: a });
   text(ctx, b.hint, W / 2, y + 58, { size: 16, weight: 700, align: 'center', color: '#bfe9ff', alpha: a });
+  if (b.omen) {
+    text(ctx, `OMEN · ${b.omen.name.toUpperCase()}`, W / 2, y + 88, { size: 15, weight: 900, align: 'center', color: '#ffb3c0', spacing: 2, alpha: a });
+  }
 }
 
 export function drawControlsStrip(ctx, x, y) {

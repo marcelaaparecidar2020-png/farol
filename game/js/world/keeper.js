@@ -28,20 +28,37 @@ export function createKeeper() {
     foghornMax: 13,
     foghornPower: 1,
     dmgMul: 1,
+    wideMul: 1,
+    focusMul: 1,
     wideHalf: 0.38,
     focusHalf: 0.095,
+    baseRange: 1080,
     range: 1080,
+    turn: 18,
+    flarePower: 1,
+    shipOil: 1,
+    mend: 0,
+    oath: null,
     emberGlass: 0,
     lightningRod: 0,
-    harborBell: 0,
     hurtFlash: 0,
     outage: 0,
+    gutter: 0,
     dryWarned: false,
   };
 }
 
 export function beamDps(keeper) {
-  return (WIDE_DPS + (FOCUS_DPS - WIDE_DPS) * keeper.focusLevel) * keeper.dmgMul;
+  const wide = WIDE_DPS * keeper.wideMul;
+  return (wide + (FOCUS_DPS * keeper.focusMul - wide) * keeper.focusLevel) * keeper.dmgMul;
+}
+
+/** Something has put the lamp out for a moment (a wickmoth on the glass, a lightning glare). */
+export function gutterLamp(session, seconds, label) {
+  const k = session.keeper;
+  if (k.outage > 0) return;
+  if (label && k.gutter <= 0) addText(session, LAMP.x, LAMP.y - 76, label, '#ffb36b', 20);
+  k.gutter = Math.max(k.gutter, seconds);
 }
 
 export function updateKeeper(session, controls, dt) {
@@ -55,9 +72,11 @@ export function updateKeeper(session, controls, dt) {
   let delta = (target - k.aim) % TAU;
   if (delta > Math.PI) delta -= TAU;
   if (delta < -Math.PI) delta += TAU;
-  k.aim += delta * (1 - Math.exp(-18 * dt));
+  k.aim += delta * (1 - Math.exp(-k.turn * dt));
+  k.gutter = Math.max(0, k.gutter - dt);
+  if (k.mend > 0 && session.phase === 'night') k.integrity = Math.min(k.integrityMax, k.integrity + k.mend * dt);
 
-  const wantsFocus = controls.focus && k.oil > 0.5;
+  const wantsFocus = controls.focus && k.oil > 0.5 && k.gutter <= 0;
   if (controls.focus && k.oil <= 0.5 && !k.dryWarned) {
     session.sfx.push('empty');
     addText(session, LAMP.x, LAMP.y - 60, 'NO OIL', '#ffb36b', 20);
@@ -92,7 +111,7 @@ export function fireFlare(session, x, y) {
   k.flares--;
   const fx = clamp(x, 40, W - 40);
   const fy = clamp(y, HORIZON + 20, 640);
-  session.flares.push({ x: fx, y: fy, radius: FLARE_RADIUS, glow: 1, life: 3.2, age: 0, burst: false });
+  session.flares.push({ x: fx, y: fy, radius: FLARE_RADIUS * Math.sqrt(k.flarePower), power: k.flarePower, glow: 1, life: 3.2, age: 0, burst: false });
   session.sfx.push('flare');
   return true;
 }
@@ -102,12 +121,12 @@ export function updateFlares(session, dt) {
     f.age += dt;
     if (!f.burst && f.age >= 0.28) {
       f.burst = true;
-      addRing(session, f.x, f.y, FLARE_RADIUS * 1.15, '#ffb15a', 0.6);
-      emitBurst(session, f.x, f.y, { count: 46, speed: 260, life: 1.1, size: 3.2, color: '#ffcf7a', drag: 2.2, glow: true });
+      addRing(session, f.x, f.y, f.radius * 1.15, '#ffb15a', 0.6);
+      emitBurst(session, f.x, f.y, { count: Math.round(46 * f.power), speed: 260 * Math.sqrt(f.power), life: 1.1, size: 3.2, color: '#ffcf7a', drag: 2.2, glow: true });
       for (const w of session.wraiths) {
-        if (dist(w.x, w.y, f.x, f.y) < FLARE_RADIUS + w.r) session.damageWraith(w, 70 * session.keeper.dmgMul, 'flare');
+        if (dist(w.x, w.y, f.x, f.y) < f.radius + w.r) session.damageWraith(w, 70 * f.power * session.keeper.dmgMul, 'flare');
       }
-      if (session.boss && dist(session.boss.x, session.boss.eyeY, f.x, f.y) < FLARE_RADIUS + 60) session.damageBoss(90);
+      if (session.boss && dist(session.boss.x, session.boss.eyeY, f.x, f.y) < f.radius + 60) session.damageBoss(90 * f.power);
       session.shake = Math.max(session.shake, 8);
     }
     f.glow = f.age < 0.28 ? f.age / 0.28 : Math.max(0, 1 - (f.age - 0.28) / (f.life - 0.28));

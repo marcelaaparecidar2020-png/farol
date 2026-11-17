@@ -5,6 +5,9 @@ import { createRng } from '../core/rng.js';
 import { ROMAN } from '../core/mathx.js';
 import { NIGHTS, LAST_NIGHT } from './nights.js';
 import { createSpawner, updateSpawner } from './spawner.js';
+import { planWatch, omenById, featuredFor } from './omens.js';
+import { WRAITH_TYPES } from '../world/wraiths.js';
+import { updateCrates } from '../world/flotsam.js';
 import { createStats, scoreKill, updateCombo } from './scoring.js';
 import { UPGRADES, applyUpgrade } from './upgrades.js';
 import { createKeeper, updateKeeper, updateFlares } from '../world/keeper.js';
@@ -19,10 +22,15 @@ export const STEP = 1 / 60;
 const DAWN_LENGTH = 3.6;
 const FALL_LENGTH = 3.2;
 
-export function createSession({ seed = 1, night = 1, upgrades = [], attract = false } = {}) {
+export function createSession({ seed = 1, night = 1, upgrades = [], attract = false, omen = 'calm' } = {}) {
   const session = {
     seed,
     attract,
+    plan: planWatch(seed),
+    omen: omenById('calm'),
+    omenLog: [],
+    giftCount: 3,
+    crates: [],
     rng: createRng(seed),
     fxRng: createRng(seed * 7919 + 17),
     time: 0,
@@ -54,36 +62,53 @@ export function createSession({ seed = 1, night = 1, upgrades = [], attract = fa
   session.onKill = (w) => scoreKill(session, w);
   session.addScore = (n) => (session.stats.score += n);
   for (const id of upgrades) applyUpgrade(session, UPGRADES.find((u) => u.id === id));
-  startNight(session, night);
+  if (omen !== 'calm') session.plan.chosen.push(omen);
+  startNight(session, night, omen);
   return session;
 }
 
-export function startNight(session, n) {
+export function startNight(session, n, omenId = 'calm') {
   const def = NIGHTS[n - 1];
+  const omen = omenById(omenId);
   session.night = n;
   session.nightTime = 0;
   session.phase = 'night';
   session.phaseT = 0;
   session.dawn = 0;
-  session.darkness = def.darkness;
+  session.omen = omen;
+  if (omen.id !== 'calm') session.omenLog.push(omen.id);
+  session.darkness = def.darkness + (omen.darkness ?? 0);
+  session.keeper.range = omen.range ?? session.keeper.baseRange;
+  session.stats.comboWindow = omen.comboWindow ?? 2.4;
   session.weather.storm = def.storm;
   session.weather.nextStrike = 4;
-  session.spawner = createSpawner(n);
+  session.spawner = createSpawner(session, n);
   session.boss = def.boss ? createUndertow(session) : null;
   session.ships = [];
   session.flares = [];
-  session.banner = { title: `NIGHT ${ROMAN[n]}`, sub: def.title, hint: def.hint, t: 0 };
+  session.crates = [];
+  const newcomer = featuredFor(session.plan, n);
+  session.banner = {
+    title: `NIGHT ${ROMAN[n]}`,
+    sub: def.title,
+    hint: newcomer ? `NEW: ${WRAITH_TYPES[newcomer].counter}` : def.hint,
+    omen: omen.id !== 'calm' ? omen : null,
+    t: 0,
+  };
   session.sfx.push('nightStart');
 }
 
-/** Between nights: mend the tower a little and begin the next night. */
-export function advanceNight(session) {
+/** Between nights: mend the tower a little and begin the next night under the omen the keeper chose. */
+export function advanceNight(session, omenId = 'calm') {
   const k = session.keeper;
   k.integrity = Math.min(k.integrityMax, k.integrity + 15);
   k.oil = k.oilMax;
   k.flares = k.flaresMax;
   k.foghornCd = 0;
-  startNight(session, session.night + 1);
+  k.gutter = 0;
+  session.giftCount = session.omen.giftsNext ?? 3;
+  if (omenId !== 'calm') session.plan.chosen.push(omenId);
+  startNight(session, session.night + 1, omenId);
 }
 
 function beginDawn(session) {
@@ -120,6 +145,7 @@ export function updateSession(session, controls, dt) {
     updateUndertow(session, dt);
     updateWraiths(session, dt);
     updateShips(session, dt);
+    updateCrates(session, dt);
     updateFlares(session, dt);
     updateCombo(session.stats, dt);
     const def = NIGHTS[session.night - 1];

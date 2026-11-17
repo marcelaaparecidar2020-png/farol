@@ -160,6 +160,17 @@ export function createAudio() {
       noise({ dur: 3.5, vol: 0.3, freq: 300, slideTo: 60 });
     },
     bossEye: () => tone({ freq: 196, type: 'sawtooth', dur: 0.7, vol: 0.1, slideTo: 392 }),
+    // a wickmoth on the glass: the flame chokes to a sputter
+    smother: () => {
+      noise({ dur: 0.6, vol: 0.2, freq: 1400, slideTo: 120 });
+      tone({ freq: 240, type: 'triangle', dur: 0.55, vol: 0.1, slideTo: 70 });
+    },
+    split: () => {
+      tone({ freq: 340, type: 'square', dur: 0.16, vol: 0.05, slideTo: 720 });
+      noise({ dur: 0.22, vol: 0.12, type: 'bandpass', freq: 900, slideTo: 2400 });
+    },
+    salvage: () => [0, 5].forEach((s, i) => bell(659.25 * Math.pow(2, s / 12), 0.1, i * 0.09)),
+    omen: () => [0, 3, 7, 10].forEach((s, i) => tone({ freq: 196 * Math.pow(2, s / 12), type: 'triangle', dur: 1.4, vol: 0.07, attack: 0.08, delay: i * 0.1 })),
     victory: () => [0, 4, 7, 11, 12, 16, 19, 24].forEach((s, i) => tone({ freq: 261.63 * Math.pow(2, s / 12), type: 'triangle', dur: 1.8, vol: 0.08, delay: i * 0.12 })),
     defeat: () => [12, 10, 7, 3, 0].forEach((s, i) => tone({ freq: 220 * Math.pow(2, s / 12), type: 'sine', dur: 1.4, vol: 0.12, delay: i * 0.28 })),
   };

@@ -3,6 +3,7 @@
 import { HORIZON, W, H } from './layout.js';
 import { hash01 } from '../core/mathx.js';
 import { addText } from './particles.js';
+import { gutterLamp } from './keeper.js';
 
 export function createWeather() {
   return { flash: 0, nextStrike: 6, bolt: null, boltAge: 0, storm: 0.4 };
@@ -16,7 +17,7 @@ export function updateWeather(session, dt) {
     if (wx.boltAge > 0.35) wx.bolt = null;
   }
   if (session.dawn > 0.2) return;
-  wx.nextStrike -= dt * (0.5 + wx.storm);
+  wx.nextStrike -= dt * (0.5 + wx.storm) * (session.omen?.strikeRate ?? 1);
   if (wx.nextStrike <= 0) {
     wx.nextStrike = session.rng.range(7, 13);
     strike(session);
@@ -39,6 +40,14 @@ export function strike(session) {
   wx.boltAge = 0;
   wx.flash = 1;
   session.sfx.push('lightning');
+  if (session.omen?.strikeRate && session.phase === 'night') {
+    // Thunderhead: every bolt scorches and stuns the bay, and leaves the keeper's lamp blind for a moment
+    for (const w of session.wraiths) {
+      session.damageWraith(w, 5, 'lightning');
+      w.stun = Math.max(w.stun, 0.35);
+    }
+    gutterLamp(session, 0.8, null);
+  }
   if (session.keeper.lightningRod > 0) {
     let struck = 0;
     for (const w of session.wraiths) {
@@ -61,6 +70,25 @@ export function drawLightningBolt(ctx, session) {
     ctx.beginPath();
     wx.bolt.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
     ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** Fog Bank: slow banks of pale mist drifting over the bay, above the dark so the night reads as fog. */
+export function drawFog(ctx, session) {
+  const amount = session.omen?.id === 'fog' ? 1 - session.dawn * 0.7 : 0;
+  if (amount <= 0) return;
+  const t = session.time;
+  ctx.save();
+  for (let i = 0; i < 9; i++) {
+    const x = ((hash01(i * 4.7) * (W + 600) + t * (14 + 8 * hash01(i * 2.9))) % (W + 600)) - 300;
+    const y = HORIZON + 30 + hash01(i * 8.3) * 330;
+    const r = 220 + hash01(i * 1.7) * 160;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(150, 170, 195, ${0.3 * amount})`);
+    g.addColorStop(1, 'rgba(150, 170, 195, 0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
   }
   ctx.restore();
 }

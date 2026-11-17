@@ -2,7 +2,7 @@
 // beam, the lamp's halo, flares and ship lanterns are cut out of it, so only what is lit can be seen.
 
 import { W, H, LAMP } from '../world/layout.js';
-import { beamHalfAngle, HALO_RADIUS } from '../world/light.js';
+import { beamHalfAngle, HALO_RADIUS, lampDark } from '../world/light.js';
 import { drawRain } from '../world/weather.js';
 import { angleDiff, dist } from '../core/mathx.js';
 import { rgba, PALETTE } from '../core/palette.js';
@@ -35,7 +35,7 @@ export function drawDarkness(ctx, session) {
   g.fillRect(0, 0, W, H);
   g.globalCompositeOperation = 'destination-out';
 
-  if (k.outage <= 0) {
+  if (!lampDark(k)) {
     const spread = beamHalfAngle(k);
     const grad = g.createRadialGradient(LAMP.x, LAMP.y, 10, LAMP.x, LAMP.y, k.range);
     grad.addColorStop(0, 'rgba(0,0,0,1)');
@@ -80,7 +80,7 @@ export function drawBeamGlow(ctx, session) {
   const k = session.keeper;
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  if (k.outage <= 0) {
+  if (!lampDark(k)) {
     const spread = beamHalfAngle(k);
     const strength = 0.19 + k.focusLevel * 0.12;
     const grad = ctx.createRadialGradient(LAMP.x, LAMP.y, 0, LAMP.x, LAMP.y, k.range);
@@ -102,7 +102,7 @@ export function drawBeamGlow(ctx, session) {
   ctx.restore();
 
   drawRain(ctx, session, (x, y) => {
-    if (k.outage > 0) return false;
+    if (lampDark(k)) return false;
     if (dist(x, y, LAMP.x, LAMP.y) > k.range) return false;
     return Math.abs(angleDiff(k.aim, Math.atan2(y - LAMP.y, x - LAMP.x))) < beamHalfAngle(k);
   });

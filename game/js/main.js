@@ -6,11 +6,12 @@ import { createAudio } from './core/audio.js';
 import { createSession, updateSession, advanceNight, isOver, STEP } from './game/session.js';
 import { createAutopilot, autopilotControls } from './game/autopilot.js';
 import { offerUpgrades, applyUpgrade } from './game/upgrades.js';
+import { offerOmens } from './game/omens.js';
 import { loadBest, saveBest } from './game/scoring.js';
 import { SCENES } from './game/scenes.js';
 import { drawWorld } from './render/scene.js';
 import { drawHud, drawNightBanner, drawControlsStrip } from './ui/hud.js';
-import { drawTitle, drawUpgradePicker, drawPause, drawResults, cardRects, RESULTS_AGAIN } from './ui/screens.js';
+import { drawTitle, drawUpgradePicker, drawOmenPicker, drawPause, drawResults, cardRects, omenRects, RESULTS_AGAIN } from './ui/screens.js';
 import { inside, text } from './ui/draw.js';
 
 const canvas = document.getElementById('farol');
@@ -34,7 +35,7 @@ const toLogical = (cx, cy) => {
 const input = createInput(canvas, toLogical);
 const audio = createAudio();
 
-const ui = { screen: 'title', t: 0, screenT: 0, best: loadBest(), offers: [], hoverCard: -1, hoverStart: false, hoverAgain: false, newBest: false, mutedNote: 0 };
+const ui = { screen: 'title', t: 0, screenT: 0, best: loadBest(), offers: [], omens: [], hoverCard: -1, hoverStart: false, hoverAgain: false, newBest: false, mutedNote: 0 };
 let session = null;
 let pilot = null;
 let frozen = false;
@@ -55,10 +56,14 @@ function newAttract() {
   setScreen('title');
 }
 
+// ?seed=N replays one watch: the same newcomers, and the same gifts and omens on offer for the same choices
+const params = new URLSearchParams(location.search);
+const fixedSeed = Number(params.get('seed')) || 0;
+
 function startRun() {
   audio.unlock();
   audio.play('click');
-  session = createSession({ seed: Math.floor(Math.random() * 1e9) });
+  session = createSession({ seed: fixedSeed || 1 + Math.floor(Math.random() * 999999) });
   pilot = null;
   setScreen('play');
 }
@@ -121,17 +126,32 @@ function handleScreens() {
       }
       break;
     case 'upgrade': {
-      const rects = cardRects();
+      const rects = cardRects(ui.offers.length);
       ui.hoverCard = rects.findIndex((r) => inside(p, r));
       let choice = -1;
       if (ui.screenT > 0.6) {
         if (input.leftClicked && ui.hoverCard >= 0) choice = ui.hoverCard;
-        ['Digit1', 'Digit2', 'Digit3'].forEach((code, i) => input.wasPressed(code, `Numpad${i + 1}`) && (choice = i));
+        ['Digit1', 'Digit2', 'Digit3'].slice(0, ui.offers.length).forEach((code, i) => input.wasPressed(code, `Numpad${i + 1}`) && (choice = i));
       }
       if (choice >= 0 && ui.offers[choice]) {
         applyUpgrade(session, ui.offers[choice]);
         audio.play('pick');
-        advanceNight(session);
+        ui.omens = offerOmens(session.plan);
+        ui.hoverCard = -1;
+        setScreen('omen');
+      }
+      break;
+    }
+    case 'omen': {
+      ui.hoverCard = omenRects().findIndex((r) => inside(p, r));
+      let choice = -1;
+      if (ui.screenT > 0.5) {
+        if (input.leftClicked && ui.hoverCard >= 0) choice = ui.hoverCard;
+        ['Digit1', 'Digit2'].forEach((code, i) => input.wasPressed(code, `Numpad${i + 1}`) && (choice = i));
+      }
+      if (choice >= 0 && ui.omens[choice]) {
+        audio.play('omen');
+        advanceNight(session, ui.omens[choice].id);
         setScreen('play');
       }
       break;
@@ -173,6 +193,9 @@ function render() {
     case 'upgrade':
       drawUpgradePicker(ctx, ui, session);
       break;
+    case 'omen':
+      drawOmenPicker(ctx, ui, session);
+      break;
     case 'results':
       drawResults(ctx, ui, session);
       break;
@@ -207,14 +230,14 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-// Screenshot scenes: ?shot=title|play|boss|upgrade|end&seed=N
-const params = new URLSearchParams(location.search);
+// Screenshot scenes: ?shot=title|play|storm|boss|upgrade|omen|end&seed=N
 const shot = params.get('shot');
 if (shot && SCENES[shot]) {
-  const scene = SCENES[shot](Number(params.get('seed')) || 1, params.has('at') ? Number(params.get('at')) : undefined);
+  const scene = SCENES[shot](Number(params.get('seed')) || 1, params.has('at') ? Number(params.get('at')) : undefined, params.get('omen') ?? undefined);
   session = scene.session;
   pilot = scene.pilot;
   ui.offers = scene.offers ?? [];
+  ui.omens = scene.omens ?? [];
   ui.hoverCard = scene.hoverCard ?? -1;
   ui.best = scene.screen === 'results' ? session.stats.score : 0;
   ui.t = 1.3;

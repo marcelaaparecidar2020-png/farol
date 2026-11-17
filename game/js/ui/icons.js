@@ -186,4 +186,77 @@ const ICONS = {
       ctx.stroke();
     }
   },
+  // a lens with a single hot ray driven through it
+  burning(ctx) {
+    ctx.beginPath();
+    ctx.ellipse(-4, 0, 8, 16, 0, 0, TAU);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-20, 0);
+    ctx.lineTo(20, 0);
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(18, 0, 4, 0, TAU);
+    ctx.fill();
+  },
+  star(ctx) {
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + (i / 10) * TAU;
+      const r = i % 2 ? 8 : 20;
+      ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.closePath();
+    ctx.fill();
+  },
+  shield(ctx) {
+    ctx.beginPath();
+    ctx.moveTo(0, -20);
+    ctx.lineTo(16, -13);
+    ctx.quadraticCurveTo(16, 10, 0, 20);
+    ctx.quadraticCurveTo(-16, 10, -16, -13);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillRect(-3, -12, 6, 22);
+    ctx.fillRect(-10, -5, 20, 6);
+  },
+  fog(ctx) {
+    for (const [y, w] of [[-10, 30], [0, 38], [10, 26]]) {
+      ctx.beginPath();
+      ctx.moveTo(-w / 2, y);
+      ctx.lineTo(w / 2, y);
+      ctx.stroke();
+    }
+  },
+  tide(ctx) {
+    ctx.beginPath();
+    ctx.arc(0, -6, 11, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-20, 12);
+    for (let x = -20; x <= 20; x += 5) ctx.lineTo(x, 12 + Math.sin(x * 0.4) * 3);
+    ctx.stroke();
+  },
+  crate(ctx) {
+    ctx.strokeRect(-14, -12, 28, 24);
+    ctx.beginPath();
+    ctx.moveTo(-14, -12);
+    ctx.lineTo(14, 12);
+    ctx.moveTo(14, -12);
+    ctx.lineTo(-14, 12);
+    ctx.stroke();
+  },
+  wave(ctx) {
+    ctx.beginPath();
+    ctx.moveTo(-20, 0);
+    ctx.lineTo(20, 0);
+    ctx.stroke();
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(-12, 9);
+    ctx.lineTo(12, 9);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  },
 };

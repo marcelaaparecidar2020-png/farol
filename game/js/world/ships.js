@@ -7,21 +7,23 @@ import { SHIP_LANES, REEFS, REEF_DANGER_X, REEF_DANGER_Y, W } from './layout.js'
 import { lightLevel } from './light.js';
 import { emitBurst, addText, addRing } from './particles.js';
 import { spawnWraith } from './wraiths.js';
+import { hurtTower } from './keeper.js';
 import { drawGlow } from '../render/glow.js';
 
 const SHIP_NAMES = ['Maré Alta', 'Gull of Ys', 'Saltwren', 'Amber Vow', 'Old Anselm', 'Northern Kite', 'Quiet Mary', 'Brightwater', 'Tern', 'Second Chance'];
 
-export function spawnShip(session) {
-  const lane = SHIP_LANES[session.shipCount % SHIP_LANES.length];
+export function spawnShip(session, { lane: laneIndex = session.shipCount % SHIP_LANES.length, convoy = false } = {}) {
+  const lane = SHIP_LANES[laneIndex];
   const name = SHIP_NAMES[(session.shipCount * 7 + session.night) % SHIP_NAMES.length];
   session.shipCount++;
   session.ships.push({
     name,
+    convoy,
     x: lane.dir > 0 ? -70 : W + 70,
     y: lane.y,
     laneY: lane.y,
     dir: lane.dir,
-    speed: 44 + session.night * 2,
+    speed: (44 + session.night * 2) * (convoy ? 0.9 : 1),
     peril: 0,
     lit: 0,
     sirens: 0,
@@ -68,6 +70,11 @@ export function updateShips(session, dt) {
       emitBurst(session, s.x, s.y, { count: 40, speed: 140, life: 1.3, size: 3, color: '#cfe6ff', gravity: 260, rise: 120 });
       const drowned = 2 + Math.min(2, Math.floor(session.night / 2));
       for (let i = 0; i < drowned; i++) spawnWraith(session, 'murkling', s.x + (i - 1) * 22, s.y + 10);
+      // the Harbourmaster's Oath: every wreck is the keeper's shame, and the tower feels it
+      if (keeper.oath === 'harbour' && session.phase === 'night') {
+        hurtTower(session, 15);
+        addText(session, s.x, s.y - 64, 'THE OATH IS BROKEN  −15', PALETTE.danger, 16);
+      }
     } else if ((s.dir > 0 && s.x > W + 60) || (s.dir < 0 && s.x < -60)) {
       guideHome(session, s);
     }
@@ -81,14 +88,16 @@ export function guideHome(session, s) {
   s.state = 'saved';
   s.stateT = 0;
   session.stats.shipsSaved++;
-  const oil = 25 * (1 + keeper.harborBell);
+  const harbour = keeper.oath === 'harbour';
+  const oil = Math.round(25 * keeper.shipOil * (s.convoy ? 1.6 : 1));
   keeper.oil = Math.min(keeper.oilMax, keeper.oil + oil);
-  if (keeper.harborBell > 0) keeper.flares = Math.min(keeper.flaresMax, keeper.flares + 1);
-  session.addScore(300);
+  if (harbour) keeper.flares = Math.min(keeper.flaresMax, keeper.flares + 1);
+  const points = 300 + (s.convoy ? 600 : 0) + (harbour ? 400 : 0);
+  session.addScore(points);
   session.sfx.push('shipSaved');
   const tx = clamp(s.x, 120, W - 120);
-  addText(session, tx, s.y - 30, `SAFE PASSAGE +300`, PALETTE.good, 20);
-  addText(session, tx, s.y - 6, `+${oil} OIL`, PALETTE.oil, 16);
+  addText(session, tx, s.y - 30, `${s.convoy ? 'CONVOY HOME' : 'SAFE PASSAGE'} +${points}`, PALETTE.good, 20);
+  if (oil > 0) addText(session, tx, s.y - 6, `+${oil} OIL${harbour ? '  +1 FLARE' : ''}`, PALETTE.oil, 16);
   addRing(session, tx, s.y, 70, '#8dffb0', 0.8);
 }
 
@@ -140,8 +149,9 @@ export function drawShips(ctx, session) {
     ctx.lineTo(-30, -8);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#b0383a';
-    ctx.fillRect(1, -64, 14, 7);
+    // a convoy flies the harbour's gold pennant
+    ctx.fillStyle = s.convoy ? '#ffcf5a' : '#b0383a';
+    ctx.fillRect(1, -64, s.convoy ? 20 : 14, 7);
     ctx.restore();
   }
 }

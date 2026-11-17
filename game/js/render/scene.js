@@ -6,7 +6,8 @@ import { drawSky } from './sky.js';
 import { drawSea, drawShoreFoam } from './sea.js';
 import { drawIsland, drawTower, drawLampBlaze } from './tower.js';
 import { drawDarkness, drawBeamGlow } from './lightmap.js';
-import { drawLightningBolt, drawRain } from '../world/weather.js';
+import { drawLightningBolt, drawRain, drawFog } from '../world/weather.js';
+import { drawCrates, drawCrateSignals } from '../world/flotsam.js';
 import { drawShips, drawShipSignals } from '../world/ships.js';
 import { drawWraithBodies, drawWraithEyes } from '../world/wraiths.js';
 import { drawUndertowBody, drawUndertowRim, drawUndertowEye } from '../world/undertow.js';
@@ -24,6 +25,7 @@ export function drawWorld(ctx, session) {
   drawSea(ctx, session);
   drawUndertowBody(ctx, session);
   drawShips(ctx, session);
+  drawCrates(ctx, session);
   drawWraithBodies(ctx, session);
   drawIsland(ctx);
   drawShoreFoam(ctx, session);
@@ -31,13 +33,17 @@ export function drawWorld(ctx, session) {
   drawParticles(ctx, session, false);
 
   drawDarkness(ctx, session);
+  drawFog(ctx, session);
   drawRain(ctx, session, null);
   drawBeamGlow(ctx, session);
   drawLampBlaze(ctx, session);
   drawUndertowRim(ctx, session);
   drawUndertowEye(ctx, session);
   drawWraithEyes(ctx, session);
-  if (!session.attract) drawShipSignals(ctx, session);
+  if (!session.attract) {
+    drawShipSignals(ctx, session);
+    drawCrateSignals(ctx, session);
+  }
   ctx.globalCompositeOperation = 'lighter';
   drawParticles(ctx, session, true);
   ctx.globalCompositeOperation = 'source-over';

@@ -4,6 +4,7 @@ import { PALETTE } from '../core/palette.js';
 import { LAMP, H } from '../world/layout.js';
 import { hash01, TAU } from '../core/mathx.js';
 import { drawGlow } from './glow.js';
+import { lampDark } from '../world/light.js';
 
 const BASE_Y = 628;
 const TOP_Y = 486;
@@ -71,7 +72,7 @@ export function drawTower(ctx, session) {
   ctx.arc(LAMP.x, BASE_Y - 22, 10, Math.PI, 0);
   ctx.lineTo(LAMP.x + 10, BASE_Y);
   ctx.fill();
-  ctx.fillStyle = k.outage > 0 ? '#1a1410' : '#ffcf7a';
+  ctx.fillStyle = lampDark(k) ? '#1a1410' : '#ffcf7a';
   ctx.fillRect(LAMP.x - 4, 538, 8, 12);
 
   // cracks grow with damage
@@ -110,7 +111,7 @@ export function drawTower(ctx, session) {
   ctx.stroke();
 
   // lamp room
-  const lit = k.outage > 0 ? 0 : 1;
+  const lit = lampDark(k) ? 0 : 1;
   ctx.fillStyle = lit ? PALETTE.lampGlass : '#2a2a30';
   ctx.fillRect(LAMP.x - 22, LAMP.y - 26, 44, 46);
   ctx.strokeStyle = '#1b1d26';
@@ -141,7 +142,12 @@ export function drawLampBlaze(ctx, session) {
   const k = session.keeper;
   ctx.globalCompositeOperation = 'lighter';
   if (k.hurtFlash > 0) drawGlow(ctx, '#ff3b3b', LAMP.x, 560, 120, k.hurtFlash * 0.7);
-  if (k.outage > 0) {
+  if (lampDark(k)) {
+    // a smothered wick still gutters: a weak, stuttering ember behind the glass until it catches again
+    if (k.gutter > 0 && k.outage <= 0) {
+      const stutter = 0.35 + 0.3 * Math.abs(Math.sin(session.time * 23)) * Math.abs(Math.sin(session.time * 7.3));
+      drawGlow(ctx, '#ff8a3c', LAMP.x, LAMP.y, 46, stutter);
+    }
     ctx.globalCompositeOperation = 'source-over';
     return;
   }

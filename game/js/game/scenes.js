@@ -3,7 +3,8 @@
 
 import { createSession, updateSession, advanceNight, STEP } from './session.js';
 import { createAutopilot, autopilotControls } from './autopilot.js';
-import { offerUpgrades } from './upgrades.js';
+import { offerUpgrades, applyUpgrade } from './upgrades.js';
+import { offerOmens } from './omens.js';
 
 function run(session, pilot, seconds, until = null) {
   const steps = Math.round(seconds / STEP);
@@ -27,14 +28,14 @@ export const SCENES = {
     run(session, pilot, at);
     return { screen: 'play', session, pilot, pointer: { x: pilot.aimX, y: pilot.aimY } };
   },
-  storm(seed, at = 39) {
-    const session = createSession({ seed, night: 4, upgrades: ['lens', 'ember', 'flares'] });
+  storm(seed, at = 39, omen = 'calm') {
+    const session = createSession({ seed, night: 4, upgrades: ['lens', 'ember', 'flares'], omen });
     const pilot = createAutopilot();
     run(session, pilot, at);
     return { screen: 'play', session, pilot, pointer: { x: pilot.aimX, y: pilot.aimY } };
   },
-  boss(seed, at = 40) {
-    const session = createSession({ seed, night: 5, upgrades: ['lens', 'ember', 'cistern', 'flares'] });
+  boss(seed, at = 40, omen = 'calm') {
+    const session = createSession({ seed, night: 5, upgrades: ['lens', 'ember', 'cistern', 'flares'], omen });
     const pilot = createAutopilot();
     run(session, pilot, at);
     return { screen: 'play', session, pilot, pointer: { x: pilot.aimX, y: pilot.aimY } };
@@ -45,12 +46,20 @@ export const SCENES = {
     run(session, pilot, 120, (s) => s.phase === 'cleared' || s.phase === 'fallen');
     return { screen: 'upgrade', session, pilot, offers: offerUpgrades(session), hoverCard: 1 };
   },
-  end(seed) {
-    const session = createSession({ seed, night: 4, upgrades: ['lens', 'lens', 'ember', 'mortar', 'flares'] });
+  /** The dawn after a gift: the keeper reads the sky for the next night. */
+  omen(seed) {
+    const session = createSession({ seed, night: 2, upgrades: ['cistern'] });
+    const pilot = createAutopilot();
+    run(session, pilot, 120, (s) => s.phase === 'cleared' || s.phase === 'fallen');
+    applyUpgrade(session, offerUpgrades(session)[0]);
+    return { screen: 'omen', session, pilot, omens: offerOmens(session.plan), hoverCard: 0 };
+  },
+  end(seed, at, omen = 'redtide') {
+    const session = createSession({ seed, night: 4, upgrades: ['lens', 'lens', 'ember', 'mortar', 'harbour'], omen });
     const pilot = createAutopilot();
     run(session, pilot, 160, (s) => s.phase === 'cleared' || s.phase === 'fallen');
     if (session.phase === 'cleared') {
-      advanceNight(session);
+      advanceNight(session, offerOmens(session.plan)[0].id);
       run(session, pilot, 400, (s) => s.phase === 'won' || s.phase === 'fallen');
       run(session, pilot, 1.5);
     }

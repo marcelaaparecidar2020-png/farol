@@ -5,6 +5,8 @@ import { ROMAN, TAU } from '../core/mathx.js';
 import { W, H } from '../world/layout.js';
 import { WRAITH_TYPES } from '../world/wraiths.js';
 import { LAST_NIGHT } from '../game/nights.js';
+import { featuredFor, omenById } from '../game/omens.js';
+import { UPGRADES } from '../game/upgrades.js';
 import { text, panel, button, keycap, roundRect, FONT_TITLE } from './draw.js';
 import { drawIcon } from './icons.js';
 import { drawGlow } from '../render/glow.js';
@@ -14,11 +16,14 @@ export const RESULTS_AGAIN = { x: W / 2 - 170, y: 584, w: 340, h: 56 };
 export const CARD_W = 300;
 export const CARD_H = 290;
 
-export function cardRects() {
+export function cardRects(count = 3, cardW = CARD_W) {
   const gap = 34;
-  const total = CARD_W * 3 + gap * 2;
-  return [0, 1, 2].map((i) => ({ x: (W - total) / 2 + i * (CARD_W + gap), y: 268, w: CARD_W, h: CARD_H }));
+  const total = cardW * count + gap * (count - 1);
+  return Array.from({ length: count }, (_, i) => ({ x: (W - total) / 2 + i * (cardW + gap), y: 268, w: cardW, h: CARD_H }));
 }
+
+export const OMEN_CARD_W = 400;
+export const omenRects = () => cardRects(2, OMEN_CARD_W);
 
 function veil(ctx, alpha, color = '4, 6, 20') {
   ctx.fillStyle = `rgba(${color}, ${alpha})`;
@@ -48,10 +53,10 @@ export function drawTitle(ctx, ui) {
   text(ctx, 'Five stormy nights. One lamp. Burn back what climbs from the sea and guide the ships home until dawn.', W / 2, 306, { size: 17, weight: 600, align: 'center', color: PALETTE.hudText });
 
   // what hunts in the dark: each creature by its eyes
-  const kinds = Object.entries(WRAITH_TYPES);
-  const startX = W / 2 - (kinds.length * 170) / 2 + 20;
+  const kinds = Object.entries(WRAITH_TYPES).filter(([, def]) => !def.hidden);
+  const startX = W / 2 - (kinds.length * 160) / 2 + 14;
   kinds.forEach(([, def], i) => {
-    const cx = startX + i * 170;
+    const cx = startX + i * 160;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     drawGlow(ctx, def.eye, cx, 372, 11, 1);
@@ -59,7 +64,7 @@ export function drawTitle(ctx, ui) {
     ctx.restore();
     text(ctx, def.name, cx + 26, 373, { size: 15, weight: 800, color: '#e9e0ff' });
   });
-  text(ctx, 'In the dark you see only their eyes.', W / 2, 404, { size: 14, weight: 600, align: 'center', color: PALETTE.hudDim });
+  text(ctx, 'In the dark you see only their eyes. Every watch, the sea sends them in a different order, under different omens.', W / 2, 404, { size: 14, weight: 600, align: 'center', color: PALETTE.hudDim });
 
   button(ctx, TITLE_START, 'LIGHT THE LAMP', { hover: ui.hoverStart, t });
   text(ctx, 'click or press ENTER', W / 2, 528, { size: 13, weight: 700, align: 'center', color: PALETTE.hudDim });
@@ -94,7 +99,7 @@ export function drawUpgradePicker(ctx, ui, session) {
   text(ctx, summary, W / 2, 186, { size: 16, weight: 700, align: 'center', color: '#ffd9a0' });
   text(ctx, 'CHOOSE ONE GIFT FOR THE LIGHTHOUSE', W / 2, 236, { size: 16, weight: 900, align: 'center', color: PALETTE.hudDim, spacing: 3 });
 
-  cardRects().forEach((r, i) => {
+  cardRects(ui.offers.length).forEach((r, i) => {
     const up = ui.offers[i];
     if (!up) return;
     const hover = ui.hoverCard === i;
@@ -126,30 +131,90 @@ export function drawUpgradePicker(ctx, ui, session) {
     ctx.strokeStyle = 'rgba(255, 210, 140, 0.4)';
     ctx.lineWidth = 2;
     ctx.stroke();
-    drawIcon(ctx, up.icon, cx, r.y + 92 + lift, 56, '#ffd27a');
-    text(ctx, up.name, cx, r.y + 170 + lift, { size: 24, weight: 900, align: 'center', font: FONT_TITLE, color: '#fff1cf' });
-    wrapText(ctx, up.text, cx, r.y + 206 + lift, r.w - 40, 22, { size: 16, weight: 600, align: 'center', color: PALETTE.hudText });
+    drawIcon(ctx, up.icon, cx, r.y + 92 + lift, 56, up.oath ? '#ffb3c0' : '#ffd27a');
+    if (up.oath) text(ctx, 'OATH · ONE PER WATCH', cx, r.y + 26 + lift, { size: 11, weight: 900, align: 'center', color: '#ffb3c0', spacing: 2 });
+    text(ctx, up.name, cx, r.y + 166 + lift, { size: up.name.length > 16 ? 20 : 24, weight: 900, align: 'center', font: FONT_TITLE, color: '#fff1cf' });
+    const lines = wrapText(ctx, up.text, cx, r.y + 198 + lift, r.w - 40, 21, { size: 16, weight: 600, align: 'center', color: PALETTE.hudText });
+    if (up.cost) wrapText(ctx, up.cost, cx, r.y + 204 + lines * 21 + lift, r.w - 40, 19, { size: 14, weight: 800, align: 'center', color: '#ff9a8a' });
     const owned = session.upgrades[up.id] || 0;
-    if (owned) text(ctx, `owned ×${owned}`, cx, r.y + 252 + lift, { size: 12, weight: 800, align: 'center', color: PALETTE.hudDim });
+    if (owned) text(ctx, `owned ×${owned}`, r.x + r.w - 14, r.y + 18 + lift, { size: 12, weight: 800, align: 'right', color: PALETTE.hudDim });
     keycap(ctx, String(i + 1), cx - 15, r.y + r.h - 4 + lift, { size: 14 });
   });
-  text(ctx, `Night ${ROMAN[session.night + 1]} of ${ROMAN[LAST_NIGHT]} awaits  ·  click a gift or press 1, 2, 3`, W / 2, 616, { size: 15, weight: 700, align: 'center', color: PALETTE.hudDim });
+  const keys = ui.offers.map((_, i) => i + 1).join(', ');
+  text(ctx, `Night ${ROMAN[session.night + 1]} of ${ROMAN[LAST_NIGHT]} awaits  ·  click a gift or press ${keys}`, W / 2, 616, { size: 15, weight: 700, align: 'center', color: PALETTE.hudDim });
+  if (ui.offers.length < 3) text(ctx, 'Still Water: only two gifts this dawn', W / 2, 642, { size: 14, weight: 800, align: 'center', color: '#ff9a8a' });
 }
 
+/** After the gift, the keeper reads the sky and charts the next night from two omens. */
+export function drawOmenPicker(ctx, ui, session) {
+  const next = session.night + 1;
+  veil(ctx, 0.55, '16, 8, 28');
+  text(ctx, 'READ THE SKY', W / 2, 96, { size: 50, weight: 900, align: 'center', font: FONT_TITLE, color: '#ffd8e0', glow: '#ff6e8a', glowBlur: 28, spacing: 8 });
+  text(ctx, `Choose the omen Night ${ROMAN[next]} will sail under`, W / 2, 148, { size: 20, weight: 700, align: 'center', font: FONT_TITLE, color: PALETTE.hudText });
+  const newcomer = featuredFor(session.plan, next);
+  const ahead = next === LAST_NIGHT ? 'The Undertow rises tonight. Every newcomer returns with it.' : newcomer ? `A newcomer rides this night in: the ${WRAITH_TYPES[newcomer].name}.` : '';
+  if (ahead) text(ctx, ahead, W / 2, 186, { size: 16, weight: 800, align: 'center', color: '#ffd9a0' });
+  text(ctx, 'EVERY OMEN BENDS A RULE AND PAYS FOR IT', W / 2, 236, { size: 16, weight: 900, align: 'center', color: PALETTE.hudDim, spacing: 3 });
+
+  omenRects().forEach((r, i) => {
+    const omen = ui.omens[i];
+    if (!omen) return;
+    const hover = ui.hoverCard === i;
+    const lift = hover ? -8 : 0;
+    ctx.save();
+    if (hover) {
+      ctx.shadowColor = 'rgba(255, 110, 138, 0.8)';
+      ctx.shadowBlur = 30;
+    }
+    roundRect(ctx, r.x, r.y + lift, r.w, r.h, 16);
+    const grad = ctx.createLinearGradient(0, r.y, 0, r.y + r.h);
+    grad.addColorStop(0, hover ? 'rgba(58, 24, 40, 0.96)' : 'rgba(30, 18, 40, 0.94)');
+    grad.addColorStop(1, 'rgba(8, 8, 22, 0.96)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.restore();
+    roundRect(ctx, r.x, r.y + lift, r.w, r.h, 16);
+    ctx.strokeStyle = hover ? '#ffb3c0' : 'rgba(255, 170, 190, 0.35)';
+    ctx.lineWidth = hover ? 3 : 1.5;
+    ctx.stroke();
+    const cx = r.x + r.w / 2;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    drawGlow(ctx, '#ff6e8a', cx, r.y + 58 + lift, 54, hover ? 0.5 : 0.28);
+    ctx.restore();
+    drawIcon(ctx, omen.icon, cx, r.y + 58 + lift, 44, '#ffd0d8');
+    text(ctx, omen.name, cx, r.y + 114 + lift, { size: 28, weight: 900, align: 'center', font: FONT_TITLE, color: '#fff1cf' });
+    const left = r.x + 30;
+    text(ctx, 'RISK', left, r.y + 152 + lift, { size: 12, weight: 900, color: '#ff9a8a', spacing: 2 });
+    wrapText(ctx, omen.risk, left, r.y + 173 + lift, r.w - 60, 20, { size: 15, weight: 700, color: PALETTE.hudText });
+    text(ctx, 'REWARD', left, r.y + 226 + lift, { size: 12, weight: 900, color: PALETTE.good, spacing: 2 });
+    wrapText(ctx, omen.reward, left, r.y + 247 + lift, r.w - 60, 20, { size: 15, weight: 700, color: PALETTE.hudText });
+    keycap(ctx, String(i + 1), cx - 15, r.y + r.h - 4 + lift, { size: 14 });
+  });
+  text(ctx, 'click an omen or press 1, 2', W / 2, 616, { size: 15, weight: 700, align: 'center', color: PALETTE.hudDim });
+}
+
+/** Draws `str` wrapped to `maxW`; returns how many lines it took. */
 function wrapText(ctx, str, x, y, maxW, lineH, opts) {
   ctx.font = `${opts.weight} ${opts.size}px "Trebuchet MS"`;
   const words = str.split(' ');
   let line = '';
   let yy = y;
+  let lines = 0;
   for (const word of words) {
     const test = line ? `${line} ${word}` : word;
     if (ctx.measureText(test).width > maxW && line) {
       text(ctx, line, x, yy, opts);
+      lines++;
       line = word;
       yy += lineH;
     } else line = test;
   }
-  if (line) text(ctx, line, x, yy, opts);
+  if (line) {
+    text(ctx, line, x, yy, opts);
+    lines++;
+  }
+  return lines;
 }
 
 export function drawPause(ctx) {
@@ -159,10 +224,10 @@ export function drawPause(ctx) {
 }
 
 export function keeperRank(score, won) {
-  if (won && score >= 40000) return 'Lord of the Lamp';
+  if (won && score >= 110000) return 'Lord of the Lamp';
   if (won) return 'Keeper of the Bay';
-  if (score >= 15000) return 'Stormwatcher';
-  if (score >= 6000) return 'Lamplighter';
+  if (score >= 25000) return 'Stormwatcher';
+  if (score >= 8000) return 'Lamplighter';
   return 'Apprentice Keeper';
 }
 
@@ -188,7 +253,11 @@ export function drawResults(ctx, ui, session) {
     text(ctx, 'NEW BEST!', 0, 0, { size: 18, weight: 900, align: 'center', color: '#ff8ad8', glow: '#ff3bb0' });
     ctx.restore();
   }
-  text(ctx, `Rank: ${keeperRank(st.score, won)}`, W / 2, 316, { size: 20, weight: 800, align: 'center', font: FONT_TITLE, color: '#ffd27a' });
+  text(ctx, `Rank: ${keeperRank(st.score, won)}`, W / 2, 312, { size: 20, weight: 800, align: 'center', font: FONT_TITLE, color: '#ffd27a' });
+  const omens = session.omenLog.map((id) => omenById(id).name);
+  const oath = UPGRADES.find((u) => u.oath && session.upgrades[u.id]);
+  const log = [omens.length ? `Omens: ${omens.join(' · ')}` : 'No omens charted', oath ? oath.name : 'No oath sworn'].join('   ·   ');
+  text(ctx, log, W / 2, 340, { size: 14, weight: 700, align: 'center', color: '#ffb3c0' });
 
   const rows = [
     ['Nights survived', `${st.nightsSurvived} / ${LAST_NIGHT}`],
@@ -199,7 +268,7 @@ export function drawResults(ctx, ui, session) {
     ['Best score', `${Math.max(ui.best, st.score).toLocaleString('en-US')}`],
   ];
   rows.forEach(([label, value], i) => {
-    const y = 352 + i * 31;
+    const y = 370 + i * 30;
     text(ctx, label, px + 70, y, { size: 17, weight: 700, color: PALETTE.hudText });
     text(ctx, value, px + 530, y, { size: 18, weight: 900, align: 'right', color: '#fff1cf' });
     ctx.fillStyle = 'rgba(255,255,255,0.06)';
@@ -207,5 +276,5 @@ export function drawResults(ctx, ui, session) {
   });
 
   button(ctx, RESULTS_AGAIN, 'KEEP WATCH AGAIN', { hover: ui.hoverAgain, t });
-  text(ctx, 'click or press R to play again  ·  ESC for the title', W / 2, 664, { size: 14, weight: 700, align: 'center', color: PALETTE.hudDim });
+  text(ctx, `Watch #${session.seed}  ·  click or press R to play again  ·  ESC for the title`, W / 2, 664, { size: 14, weight: 700, align: 'center', color: PALETTE.hudDim });
 }
